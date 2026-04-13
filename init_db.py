@@ -1,0 +1,301 @@
+import sqlite3
+
+
+conn = sqlite3.connect("college_attendance.db")
+cur = conn.cursor()
+
+cur.execute("PRAGMA foreign_keys = ON")
+
+cur.executescript(
+    """
+    DROP TABLE IF EXISTS attendance;
+    DROP TABLE IF EXISTS grades;
+    DROP TABLE IF EXISTS attendance_sessions;
+    DROP TABLE IF EXISTS class_subjects;
+    DROP TABLE IF EXISTS students;
+    DROP TABLE IF EXISTS subjects;
+    DROP TABLE IF EXISTS teachers;
+    DROP TABLE IF EXISTS classes;
+
+    CREATE TABLE classes (
+      class_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      year_name TEXT NOT NULL,
+      division TEXT NOT NULL,
+      academic_year TEXT NOT NULL,
+      UNIQUE(year_name, division, academic_year)
+    );
+
+    CREATE TABLE students (
+      student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      roll_no TEXT NOT NULL UNIQUE,
+      full_name TEXT NOT NULL,
+      email TEXT,
+      class_id INTEGER NOT NULL,
+      FOREIGN KEY (class_id) REFERENCES classes(class_id)
+    );
+
+    CREATE TABLE teachers (
+      teacher_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      teacher_name TEXT NOT NULL,
+      email TEXT
+    );
+
+    CREATE TABLE subjects (
+      subject_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      subject_code TEXT NOT NULL UNIQUE,
+      subject_name TEXT NOT NULL
+    );
+
+    CREATE TABLE class_subjects (
+      class_subject_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL,
+      subject_id INTEGER NOT NULL,
+      teacher_id INTEGER NOT NULL,
+      UNIQUE(class_id, subject_id),
+      FOREIGN KEY (class_id) REFERENCES classes(class_id),
+      FOREIGN KEY (subject_id) REFERENCES subjects(subject_id),
+      FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id)
+    );
+
+    CREATE TABLE attendance_sessions (
+      session_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_subject_id INTEGER NOT NULL,
+      session_date TEXT NOT NULL,
+      start_time TEXT,
+      FOREIGN KEY (class_subject_id) REFERENCES class_subjects(class_subject_id)
+    );
+
+    CREATE TABLE attendance (
+      session_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('P', 'A')),
+      PRIMARY KEY (session_id, student_id),
+      FOREIGN KEY (session_id) REFERENCES attendance_sessions(session_id),
+      FOREIGN KEY (student_id) REFERENCES students(student_id)
+    );
+
+    CREATE TABLE grades (
+      student_id INTEGER NOT NULL,
+      subject_id INTEGER NOT NULL,
+      marks REAL,
+      grade TEXT,
+      PRIMARY KEY (student_id, subject_id),
+      FOREIGN KEY (student_id) REFERENCES students(student_id),
+      FOREIGN KEY (subject_id) REFERENCES subjects(subject_id)
+    );
+    """
+)
+
+cur.executemany(
+    "INSERT INTO classes (year_name, division, academic_year) VALUES (?, ?, ?)",
+    [
+        ("SY", "A", "2025-26"),
+        ("TE", "A", "2025-26"),
+    ],
+)
+
+teachers = [
+    ("Pooja Jadhav", "pooja@college.com"),
+    ("Ashwini Patil", "ashwini@college.com"),
+    ("Prof C", "c@college.com"),
+    ("Prof D", "d@college.com"),
+    ("Prof E", "e@college.com"),
+    ("Prof F", "f@college.com"),
+]
+cur.executemany("INSERT INTO teachers (teacher_name, email) VALUES (?, ?)", teachers)
+
+subjects = [
+    ("101", "DATABASE MANAGEMENT SYSTEM"),
+    ("102", "DATA SCIENCE"),
+    ("103", "EMBEDDED SYSTEM"),
+    ("104", "PROBABILITY AND STATISTICS"),
+    ("105", "EVS"),
+    ("106", "PROJECT MANAGEMENT"),
+    ("201", "DATA SCIENCE"),
+    ("202", "ARTIFICIAL NEURAL NETWORK"),
+    ("203", "CYBER SECURITY"),
+    ("204", "NATURAL LANGUAGE PROCESSING"),
+]
+cur.executemany("INSERT INTO subjects (subject_code, subject_name) VALUES (?, ?)", subjects)
+
+class_subjects = [
+    (1, 1, 1),
+    (1, 2, 2),
+    (1, 3, 3),
+    (1, 4, 4),
+    (1, 5, 5),
+    (1, 6, 6),
+    (2, 7, 1),
+    (2, 8, 2),
+    (2, 9, 3),
+    (2, 10, 4),
+]
+cur.executemany(
+    "INSERT INTO class_subjects (class_id, subject_id, teacher_id) VALUES (?, ?, ?)",
+    class_subjects,
+)
+
+students = [
+    ("2101", "THERESA MATTEL", "s2101@gmail.com", 1),
+    ("2102", "SHIVARKAR ANISHKA RAHUL", "s2102@gmail.com", 1),
+    ("2103", "PATOLE NAMRATA SHASHIKANT", "s2103@gmail.com", 1),
+    ("2104", "GHOSH PRATHAMA ANISH", "s2104@gmail.com", 1),
+    ("2105", "JORWAR PANKAJ RAJU", "s2105@gmail.com", 1),
+    ("2106", "NEMADE SIDDHESH TUSHAR", "s2106@gmail.com", 1),
+    ("2107", "SHINDE MONIKA SUBHASH", "s2107@gmail.com", 1),
+    ("2108", "MULE SUJAL SAMEER", "s2108@gmail.com", 1),
+    ("2109", "TONDARE SIYA MAHENDRA", "s2109@gmail.com", 1),
+    ("2110", "PAWAR HARSHADA SACHIN", "s2110@gmail.com", 1),
+  ("2111", "KHALELKAR TANUSHREE ANUP", "s2111@gmail.com", 1),
+  ("2112", "SHERE SANDHYA RAMPRASAD", "s2112@gmail.com", 1),
+  ("2113", "MALAVE PAYAL PANDURANG", "s2113@gmail.com", 1),
+  ("2114", "SHUKLA HITESHI JAYESH", "s2114@gmail.com", 1),
+  ("2115", "GOLE ANUSHKA MAHADEV", "s2115@gmail.com", 1),
+  ("2116", "KORE GAYATRI VIJAYKUMAR", "s2116@gmail.com", 1),
+  ("2117", "SHINDE OMKAR HARISH", "s2117@gmail.com", 1),
+  ("2118", "BHOSALE SUSHANT SOMNATH", "s2118@gmail.com", 1),
+  ("2119", "MAINDAD OMKAR DHANANJAY", "s2119@gmail.com", 1),
+  ("2120", "PUPPALWAR SOHAM PANDHARI", "s2120@gmail.com", 1),
+  ("2121", "DHAGE GAURAV RAVINDRA", "s2121@gmail.com", 1),
+  ("2122", "NEVASE SHRIRAJ SUNIL", "s2122@gmail.com", 1),
+  ("2123", "KUDCHIKAR PARAS PANDURANG", "s2123@gmail.com", 1),
+  ("2124", "FAKATKAR PRADNYA KAILAS", "s2124@gmail.com", 1),
+  ("2125", "SONAWANE PRUTHVI ANIL", "s2125@gmail.com", 1),
+  ("2126", "SHAIKH AMAN RAJU", "s2126@gmail.com", 1),
+  ("2127", "SHAIKH ALI RIYAZ", "s2127@gmail.com", 1),
+  ("2128", "JADHAV PAYAL PRAVIN", "s2128@gmail.com", 1),
+  ("2129", "WANKHADE POOJA SANJAY", "s2129@gmail.com", 1),
+  ("2130", "KALE RUTUJA ASHOK", "s2130@gmail.com", 1),
+  ("2131", "GAIKWAD CHETAN NAGNATH", "s2131@gmail.com", 1),
+  ("2132", "ABHISHEK GAURAV", "s2132@gmail.com", 1),
+  ("2133", "KHODE VEDANT KESHAV", "s2133@gmail.com", 1),
+  ("2134", "PATIL AKSHAY UMESH", "s2134@gmail.com", 1),
+  ("2135", "SONKULE SHREYASH", "s2135@gmail.com", 1),
+  ("2136", "KOLHE NIKHIL ASHOK", "s2136@gmail.com", 1),
+  ("2137", "VIRDHE OMKAR ATUL", "s2137@gmail.com", 1),
+  ("2138", "DESHMUKH SHREYA PRASHANT", "s2138@gmail.com", 1),
+  ("2139", "GHULE YASH PRABHAKAR", "s2139@gmail.com", 1),
+  ("2140", "LAKHE ADITYA SAMBHAJI", "s2140@gmail.com", 1),
+  ("2141", "GANGJI ADITYA SUNIL", "s2141@gmail.com", 1),
+  ("2142", "KOLI JYOTI SIDRAM", "s2142@gmail.com", 1),
+  ("2143", "PICHARE CHAITANYA CHANDRAKANT", "s2143@gmail.com", 1),
+  ("2144", "SONONE RADHIKA DIGHAMBER", "s2144@gmail.com", 1),
+  ("2145", "TANDEL TAHAAM IMRAN", "s2145@gmail.com", 1),
+  ("2146", "NADANWAR YASHASHVI", "s2146@gmail.com", 1),
+  ("2147", "GURAV RAVIRAJ VIJAY", "s2147@gmail.com", 1),
+  ("2148", "LOKHANDE OMKAR KALURAM", "s2148@gmail.com", 1),
+  ("2149", "RANE DILESH RAMESHWAR", "s2149@gmail.com", 1),
+  ("2150", "JADHAV ANUJA YENKU", "s2150@gmail.com", 1),
+  ("2151", "RAUT SURAJ VAIBHAV", "s2151@gmail.com", 1),
+  ("2152", "CHAVAN MAYUR MAHENDRA", "s2152@gmail.com", 1),
+  ("2153", "DHOLE NANDINI SUNIL", "s2153@gmail.com", 1),
+  ("2154", "KHATRI HARSHITA", "s2154@gmail.com", 1),
+  ("2155", "BODAKHE GAURI SADASHIVAPPA", "s2155@gmail.com", 1),
+  ("2156", "PATIL VISHWAJIT PRASHANT", "s2156@gmail.com", 1),
+  ("2157", "PATIL PRASHANT SANJAY", "s2157@gmail.com", 1),
+  ("2158", "BHADALE SPANDAN RAHUL", "s2158@gmail.com", 1),
+  ("2159", "GAIKWAD VEDIKA SATISH", "s2159@gmail.com", 1),
+  ("2160", "PAWAR SAMRUDDHI RAJESH", "s2160@gmail.com", 1),
+  ("2161", "DIVYAM RAJ", "s2161@gmail.com", 1),
+  ("2162", "TRIVEDI YUG RAJEEV", "s2162@gmail.com", 1),
+  ("2163", "DESHMUKH YASH NITIN", "s2163@gmail.com", 1),
+  ("2164", "UNDE SIDDHARTH DILIP", "s2164@gmail.com", 1),
+  ("2165", "SARWADE ANARY SACHIN", "s2165@gmail.com", 1),
+  ("2166", "GHADGE YASH VINOD", "s2166@gmail.com", 1),
+  ("2167", "WATTAMWAR SHASHANK RAMESH", "s2167@gmail.com", 1),
+  ("2168", "SUKHADIYA YASH MUKESH", "s2168@gmail.com", 1),
+  ("2169", "KAMBLE VISHWPRATAP SACHIN", "s2169@gmail.com", 1),
+  ("2170", "MASIHA SILVIYA SANTOSH", "s2170@gmail.com", 1),
+  ("2171", "GOLANDE ADITYA YOGESH", "s2171@gmail.com", 1),
+  ("2172", "MORE HARSHAL MANOHAR", "s2172@gmail.com", 1),
+  ("2173", "SONAWANE SUYASH MAHESH", "s2173@gmail.com", 1),
+  ("2174", "BENKE SIDDHI SAGAR", "s2174@gmail.com", 1),
+  ("2175", "DAREKAR SAMRUDDHI BALASO", "s2175@gmail.com", 1),
+  ("2176", "WAGH TANUSHREE KISHOR", "s2176@gmail.com", 1),
+  ("2177", "MAHER TANISHA KARANSINGH", "s2177@gmail.com", 1),
+  ("2178", "KADAM PRASAD ASHOK", "s2178@gmail.com", 1),
+  ("2179", "DAHIWAL OMKAR SURESH", "s2179@gmail.com", 1),
+  ("3101", "DINDE KAJAL DATTU", None, 2),
+  ("3102", "DESHMUKH YASMIN BASHIR", None, 2),
+  ("3103", "SHINDE SAYALI DUTTA", None, 2),
+  ("3104", "JAGTAP SNEHA UMESH", None, 2),
+  ("3105", "SHITOLE SARTHAK SUBHASH", None, 2),
+  ("3106", "SURYAWANSHI SHREYA SATISH", None, 2),
+  ("3107", "MAHER CHAITALI SWARUPCHAND", None, 2),
+  ("3108", "PANDE PRIYANSHU RAKESH", None, 2),
+  ("3109", "KARANDIKAR AARYAN GIRISH", None, 2),
+  ("3110", "MOHAMMED MUSHARRAF", None, 2),
+  ("3111", "VITKAR PRAJWAL ANAND", None, 2),
+  ("3112", "BHOSALE SHARDUL RUSHIKANT", None, 2),
+  ("3113", "BHUTE SACHIN NAVRATAN", None, 2),
+  ("3114", "GARUD SUSHMIT SUNIL", None, 2),
+  ("3115", "SHITOLE SIDDHIKA SHASHIKANT", None, 2),
+  ("3116", "GIRME HARSHAL SACHIN", None, 2),
+  ("3117", "MANDOT SHREYAS SANJAY", None, 2),
+  ("3118", "DKONDA SHREYA SUDHAKAR", None, 2),
+  ("3119", "DHANWADE SHRADDHA SANJAY", None, 2),
+  ("3120", "NIKAM KIRAN RAVINDRA", None, 2),
+  ("3121", "PATIL RAHUL DAGDU", None, 2),
+  ("3122", "PATIL SUMIT SHARAD", None, 2),
+  ("3123", "KHATADE PRITHVIRAJ PANKAJ", None, 2),
+  ("3124", "MALI ADITYA RAMCHANDRA", None, 2),
+  ("3125", "SANDRA SURESH", None, 2),
+  ("3126", "KHAMKAR VAISHNAVI BANDU", None, 2),
+  ("3127", "LOHARE SWARUPA KALIDAS", None, 2),
+  ("3128", "BELSARE KIRAN SATISH", None, 2),
+  ("3129", "MACHALE OMKAR KAKASAHEB", None, 2),
+  ("3130", "AHIRRAO BHAVESH MAHENDRA", None, 2),
+  ("3131", "PARBAT ADITYA MAHARAJ", None, 2),
+  ("3132", "MULANI DEVESH PRAKASH", None, 2),
+  ("3133", "KADAM SAMRUDDHI VIJAY", None, 2),
+  ("3134", "JADHAV PIYUSH BHAGWAN", None, 2),
+  ("3135", "HANCHETE KASHISH AMBADAS", None, 2),
+  ("3136", "SHIRKE SANSKRUTI DADASA", None, 2),
+  ("3137", "THORAT SNEHA PRAKASH", None, 2),
+  ("3138", "SONAWANE SUSMIT RAJENDRA", None, 2),
+  ("3139", "DALAVI AKASHI DIGAMBER", None, 2),
+  ("3140", "SALUNKHE SNEHA NITIN", None, 2),
+  ("3141", "WANKHEDE ARYA SHEKHAR", None, 2),
+  ("3142", "KULKARNI VAISHNAVI SANTOSHI", None, 2),
+  ("3143", "NIMBALE KAR MAYURI NITIN", None, 2),
+  ("3144", "GHORE TRUPTI ASHOK", None, 2),
+  ("3145", "AHER DARSHAN CHANDRASHEKHAR", None, 2),
+  ("3146", "SAWANT SAMARTH SANJAY", None, 2),
+  ("3147", "DHANSHETTI SAMARTH MAHESH", None, 2),
+  ("3148", "BUNDHE PREM BHAGWAN", None, 2),
+  ("3149", "MATKAR SHREYASH PRASHANT", None, 2),
+  ("3150", "SHINDE VEDANT KAMALKAR", None, 2),
+  ("3151", "BHALEGHARE AKANKSHA VINAYAK", None, 2),
+  ("3152", "GHADGE SUHANI ANIL", None, 2),
+  ("3153", "TATHE DESHMUKH PRACHI DATTATRAY", None, 2),
+  ("3154", "NADAF AIWAZ SALIM", None, 2),
+  ("3155", "CHIKANE ADITYA SUNIL", None, 2),
+  ("3156", "CHAVAN ARYAN DILIP", None, 2),
+  ("3157", "TAMBOLI AMAN", None, 2),
+  ("3158", "GURAV AVDHUT ANANDRAO", None, 2),
+  ("3159", "DHONDE YASH DEVENDRA", None, 2),
+  ("3160", "DAHIFALE YUVRAJ AJINATH", None, 2),
+  ("3161", "PAWAR ASHISH VISHWAS", None, 2),
+  ("3162", "RATHOD PARSHURAM BRANHADEO", None, 2),
+  ("3163", "SHAIKH MAAZ SHAKUR", None, 2),
+  ("3164", "DESAI SHUBHAM JAYSING", None, 2),
+  ("3165", "SHINDE VINAYAK GAJANAN", None, 2),
+  ("3166", "DAKAVE SANIKA LAXMAN", None, 2),
+  ("3167", "PATIL ADITYA MAHESH", None, 2),
+  ("3168", "GHULE SHRAVAN BAPU", None, 2),
+  ("3169", "MURTUZA ISMAIL QUADRI", None, 2),
+  ("3170", "NAVALE VISHWAJIT AMBALAL", None, 2),
+  ("3171", "NIKITA SANJAY GADADE", None, 2),
+  ("3172", "WAKCHAURE SHREYA DHANAJAY", None, 2),
+  ("3173", "KARNIK MUGDHA NITIN", None, 2),
+  ("3174", "PATHAN SAIMA KHAN YASIN KHAN", None, 2),
+]
+cur.executemany(
+    "INSERT INTO students (roll_no, full_name, email, class_id) VALUES (?, ?, ?, ?)",
+    students,
+)
+
+conn.commit()
+conn.close()
+
+print("SQLite database created successfully!")
